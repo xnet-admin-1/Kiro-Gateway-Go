@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  kiro-gateway:
+    image: kiro-gateway:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # Server Configuration
+      - PORT=${PORT:-8080}
+      
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AMAZON_Q_SIGV4=${AMAZON_Q_SIGV4:-true}
+      - Q_USE_SENDMESSAGE=${Q_USE_SENDMESSAGE:-true}
+      
+      # Headless Mode Configuration
+      - HEADLESS_MODE=${HEADLESS_MODE:-true}
+      - AUTOMATE_AUTH=${AUTOMATE_AUTH:-true}
+      
+      # SSO Configuration
+      - SSO_START_URL=${SSO_START_URL}
+      - SSO_REGION=${SSO_REGION:-us-east-1}
+      - SSO_ACCOUNT_ID=${SSO_ACCOUNT_ID}
+      - SSO_ROLE_NAME=${SSO_ROLE_NAME:-AdministratorAccess}
+      - AWS_SSO_ACCOUNT_ID=${AWS_SSO_ACCOUNT_ID}
+      - AWS_SSO_ROLE_NAME=${AWS_SSO_ROLE_NAME:-AdministratorAccess}
+      
+      # Browser Automation Credentials (for headless auth)
+      - SSO_USERNAME=${SSO_USERNAME}
+      
+      # Profile Configuration
+      - PROFILE_ARN=${PROFILE_ARN}
+      
+      # Security Configuration (Production Defaults)
+      - OPT_OUT_TELEMETRY=${OPT_OUT_TELEMETRY:-true}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      
+      # Performance Configuration
+      - MAX_RETRIES=${MAX_RETRIES:-3}
+      - MAX_BACKOFF=${MAX_BACKOFF:-30s}
+      - CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-10s}
+      - READ_TIMEOUT=${READ_TIMEOUT:-30s}
+      - OPERATION_TIMEOUT=${OPERATION_TIMEOUT:-60s}
+      - STALLED_STREAM_GRACE=${STALLED_STREAM_GRACE:-5m}
+      
+      # Cache Configuration (Production Optimized)
+      - RESPONSE_CACHE_ENABLED=${RESPONSE_CACHE_ENABLED:-true}
+      - RESPONSE_CACHE_TTL=${RESPONSE_CACHE_TTL:-60m}
+      - RESPONSE_CACHE_MAX_ENTRIES=${RESPONSE_CACHE_MAX_ENTRIES:-1000}
+      - REQUEST_DEDUP_ENABLED=${REQUEST_DEDUP_ENABLED:-true}
+      
+      # MCP Configuration
+      - MCP_ENABLED=${MCP_ENABLED:-true}
+    volumes:
+      # Mount application data (database, logs)
+      - kiro-data:/app/data
+      - kiro-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT:-8080}/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - kiro-network
+    # Enhanced security options
+    security_opt:
+      - seccomp:./seccomp-profile.json
+      - no-new-privileges:true
+      - apparmor=docker-default
+    # Shared memory for Chromium
+    shm_size: '2gb'
+    # Drop all capabilities, add only what's needed
+    cap_drop:
+      - ALL
+    # Docker secrets for sensitive data
+    secrets:
+      - admin_api_key
+      - sso_password
+      - mfa_totp_secret
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+# Docker secrets configuration
+secrets:
+  admin_api_key:
+    external: true
+  sso_password:
+    external: true
+  mfa_totp_secret:
+    external: true
+
+volumes:
+  kiro-data:
+    driver: local
+  kiro-logs:
+    driver: local
+
+networks:
+  kiro-network:
+    driver: overlay

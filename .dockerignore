@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+docs/
+!README.md
+
+# Build artifacts
+kiro-gateway
+kiro-gateway.exe
+dist/
+vendor/
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Test files
+*_test.go
+test-data/
+tests/
+
+# Development files
+.env
+.env.*
+!.env.example
+.kiro/credentials/
+.kiro/api-keys/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Screenshots
+screenshots/
+
+# Temporary files
+tmp/
+temp/
+browser-dump

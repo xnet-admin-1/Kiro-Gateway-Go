@@ -1,0 +1,170 @@
+version: '3.8'
+
+services:
+  kiro-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME}
+        COMMIT_HASH: ${COMMIT_HASH:-dev}
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    environment:
+      # Server Configuration
+      - PORT=${PORT:-8080}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AMAZON_Q_SIGV4=${AMAZON_Q_SIGV4:-true}
+      - Q_USE_SENDMESSAGE=${Q_USE_SENDMESSAGE:-true}
+      
+      # Headless Mode Configuration
+      - HEADLESS_MODE=${HEADLESS_MODE:-true}
+      - AUTOMATE_AUTH=${AUTOMATE_AUTH:-true}
+      
+      # SSO Configuration
+      - SSO_START_URL=${SSO_START_URL}
+      - SSO_REGION=${SSO_REGION:-us-east-1}
+      - SSO_ACCOUNT_ID=${SSO_ACCOUNT_ID}
+      - SSO_ROLE_NAME=${SSO_ROLE_NAME:-AdministratorAccess}
+      - AWS_SSO_ACCOUNT_ID=${AWS_SSO_ACCOUNT_ID}
+      - AWS_SSO_ROLE_NAME=${AWS_SSO_ROLE_NAME:-AdministratorAccess}
+      
+      # Browser Automation Credentials (for headless auth)
+      - SSO_USERNAME=${SSO_USERNAME}
+      - SSO_PASSWORD=${SSO_PASSWORD}
+      - MFA_TOTP_SECRET=${MFA_TOTP_SECRET}
+      
+      # Profile Configuration
+      - PROFILE_ARN=${PROFILE_ARN}
+      
+      # Security Configuration (Production Defaults)
+      - OPT_OUT_TELEMETRY=${OPT_OUT_TELEMETRY:-true}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      
+      # Performance Configuration
+      - MAX_RETRIES=${MAX_RETRIES:-3}
+      - MAX_BACKOFF=${MAX_BACKOFF:-30s}
+      - CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-10s}
+      - READ_TIMEOUT=${READ_TIMEOUT:-30s}
+      - OPERATION_TIMEOUT=${OPERATION_TIMEOUT:-60s}
+      - STALLED_STREAM_GRACE=${STALLED_STREAM_GRACE:-5m}
+      
+      # Cache Configuration (Production Optimized)
+      - RESPONSE_CACHE_ENABLED=${RESPONSE_CACHE_ENABLED:-true}
+      - RESPONSE_CACHE_TTL=${RESPONSE_CACHE_TTL:-60m}
+      - RESPONSE_CACHE_MAX_ENTRIES=${RESPONSE_CACHE_MAX_ENTRIES:-1000}
+      - REQUEST_DEDUP_ENABLED=${REQUEST_DEDUP_ENABLED:-true}
+      
+      # MCP Configuration
+      - MCP_ENABLED=${MCP_ENABLED:-true}
+    volumes:
+      # Mount credentials directory (for encrypted credential files)
+      - ./.kiro/credentials:/app/.kiro/credentials:ro
+      # Mount application data (database)
+      - kiro-data:/app/data
+      # Writable directories for application operation
+      - kiro-api-keys:/app/.kiro/api-keys
+      - kiro-credentials-rw:/app/.kiro/credentials-rw
+      - kiro-logs:/app/logs
+      - kiro-cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT:-8080}/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    restart: always
+    networks:
+      - kiro-network
+    # Enhanced security options
+    security_opt:
+      - seccomp:./seccomp-profile.json  # Custom seccomp profile (more secure than unconfined)
+      - no-new-privileges:true           # Prevent privilege escalation
+      - apparmor=docker-default          # Use default AppArmor profile
+    # Shared memory for Chromium
+    shm_size: '2gb'
+    # Drop all capabilities, add only what's needed
+    cap_drop:
+      - ALL
+    # Read-only root filesystem (with specific writable volumes)
+    read_only: true
+    tmpfs:
+      # Temporary files (browser automation, general temp)
+      - /tmp:mode=1777,size=2g,exec
+      # Runtime files
+      - /var/run:mode=755,size=100m
+      # Home directory for browser profile and crash handler
+      - /home/kiro:mode=755,size=500m
+      # Chromium crash handler database
+      - /app/.config:mode=755,size=100m
+      # Chromium user data directory
+      - /app/.local:mode=755,size=200m
+    # Docker secrets for sensitive data (Docker Stack only - comment out for docker-compose)
+    # secrets:
+    #   - admin_api_key
+    #   - sso_password
+    #   - mfa_totp_secret
+
+  # Mock AWS services for testing
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sts,sso-oidc
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack-data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - kiro-network
+    profiles:
+      - testing
+
+  # Database for development
+  sqlite:
+    image: alpine:latest
+    command: tail -f /dev/null
+    volumes:
+      - sqlite-data:/data
+    networks:
+      - kiro-network
+    profiles:
+      - development
+
+# Docker secrets configuration (Docker Stack only - not supported in docker-compose)
+# Uncomment when using: docker stack deploy -c docker-compose.yml kiro
+# secrets:
+#   admin_api_key:
+#     external: true
+#   sso_password:
+#     external: true
+#   mfa_totp_secret:
+#     external: true
+
+volumes:
+  kiro-data:
+    driver: local
+  kiro-logs:
+    driver: local
+  kiro-api-keys:
+    driver: local
+  kiro-credentials-rw:
+    driver: local
+  kiro-cache:
+    driver: local
+  localstack-data:
+    driver: local
+  sqlite-data:
+    driver: local
+
+networks:
+  kiro-network:
+    driver: bridge

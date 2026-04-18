@@ -1,0 +1,138 @@
+=== RUN   TestClassifyError
+=== RUN   TestClassifyError/throttling_error_429
+=== RUN   TestClassifyError/model_overloaded_429
+=== RUN   TestClassifyError/context_window_overflow_400
+=== RUN   TestClassifyError/monthly_limit_reached
+=== RUN   TestClassifyError/authentication_failed_401
+=== RUN   TestClassifyError/authentication_failed_403
+=== RUN   TestClassifyError/invalid_request_400
+=== RUN   TestClassifyError/internal_server_error_500
+=== RUN   TestClassifyError/bad_gateway_502
+=== RUN   TestClassifyError/service_unavailable_503
+=== RUN   TestClassifyError/gateway_timeout_504
+=== RUN   TestClassifyError/unknown_error_with_original_error
+=== RUN   TestClassifyError/unknown_error_without_original_error
+=== RUN   TestClassifyError/case_insensitive_pattern_matching
+=== RUN   TestClassifyError/case_insensitive_model_capacity
+=== RUN   TestClassifyError/case_insensitive_monthly_limit
+--- PASS: TestClassifyError (0.00s)
+    --- PASS: TestClassifyError/throttling_error_429 (0.00s)
+    --- PASS: TestClassifyError/model_overloaded_429 (0.00s)
+    --- PASS: TestClassifyError/context_window_overflow_400 (0.00s)
+    --- PASS: TestClassifyError/monthly_limit_reached (0.00s)
+    --- PASS: TestClassifyError/authentication_failed_401 (0.00s)
+    --- PASS: TestClassifyError/authentication_failed_403 (0.00s)
+    --- PASS: TestClassifyError/invalid_request_400 (0.00s)
+    --- PASS: TestClassifyError/internal_server_error_500 (0.00s)
+    --- PASS: TestClassifyError/bad_gateway_502 (0.00s)
+    --- PASS: TestClassifyError/service_unavailable_503 (0.00s)
+    --- PASS: TestClassifyError/gateway_timeout_504 (0.00s)
+    --- PASS: TestClassifyError/unknown_error_with_original_error (0.00s)
+    --- PASS: TestClassifyError/unknown_error_without_original_error (0.00s)
+    --- PASS: TestClassifyError/case_insensitive_pattern_matching (0.00s)
+    --- PASS: TestClassifyError/case_insensitive_model_capacity (0.00s)
+    --- PASS: TestClassifyError/case_insensitive_monthly_limit (0.00s)
+=== RUN   TestExtractRequestID
+=== RUN   TestExtractRequestID/valid_request_ID
+=== RUN   TestExtractRequestID/request_ID_with_spaces
+=== RUN   TestExtractRequestID/no_request_ID
+=== RUN   TestExtractRequestID/empty_body
+=== RUN   TestExtractRequestID/malformed_JSON
+=== RUN   TestExtractRequestID/multiple_request_IDs_-_first_match
+--- PASS: TestExtractRequestID (0.00s)
+    --- PASS: TestExtractRequestID/valid_request_ID (0.00s)
+    --- PASS: TestExtractRequestID/request_ID_with_spaces (0.00s)
+    --- PASS: TestExtractRequestID/no_request_ID (0.00s)
+    --- PASS: TestExtractRequestID/empty_body (0.00s)
+    --- PASS: TestExtractRequestID/malformed_JSON (0.00s)
+    --- PASS: TestExtractRequestID/multiple_request_IDs_-_first_match (0.00s)
+=== RUN   TestContainsIgnoreCase
+=== RUN   TestContainsIgnoreCase/exact_match
+=== RUN   TestContainsIgnoreCase/case_insensitive_match
+=== RUN   TestContainsIgnoreCase/partial_match
+=== RUN   TestContainsIgnoreCase/no_match
+=== RUN   TestContainsIgnoreCase/empty_substring
+=== RUN   TestContainsIgnoreCase/empty_string
+--- PASS: TestContainsIgnoreCase (0.00s)
+    --- PASS: TestContainsIgnoreCase/exact_match (0.00s)
+    --- PASS: TestContainsIgnoreCase/case_insensitive_match (0.00s)
+    --- PASS: TestContainsIgnoreCase/partial_match (0.00s)
+    --- PASS: TestContainsIgnoreCase/no_match (0.00s)
+    --- PASS: TestContainsIgnoreCase/empty_substring (0.00s)
+    --- PASS: TestContainsIgnoreCase/empty_string (0.00s)
+=== RUN   TestClassifyHTTPError
+=== RUN   TestClassifyHTTPError/valid_HTTP_response
+=== RUN   TestClassifyHTTPError/nil_HTTP_response
+--- PASS: TestClassifyHTTPError (0.00s)
+    --- PASS: TestClassifyHTTPError/valid_HTTP_response (0.00s)
+    --- PASS: TestClassifyHTTPError/nil_HTTP_response (0.00s)
+=== RUN   TestErrorKind_String
+=== RUN   TestErrorKind_String/Unknown
+=== RUN   TestErrorKind_String/Throttling
+=== RUN   TestErrorKind_String/ContextWindowOverflow
+=== RUN   TestErrorKind_String/ModelOverloaded
+=== RUN   TestErrorKind_String/MonthlyLimitReached
+=== RUN   TestErrorKind_String/AuthenticationFailed
+=== RUN   TestErrorKind_String/InvalidRequest
+=== RUN   TestErrorKind_String/InternalServerError
+--- PASS: TestErrorKind_String (0.00s)
+    --- PASS: TestErrorKind_String/Unknown (0.00s)
+    --- PASS: TestErrorKind_String/Throttling (0.00s)
+    --- PASS: TestErrorKind_String/ContextWindowOverflow (0.00s)
+    --- PASS: TestErrorKind_String/ModelOverloaded (0.00s)
+    --- PASS: TestErrorKind_String/MonthlyLimitReached (0.00s)
+    --- PASS: TestErrorKind_String/AuthenticationFailed (0.00s)
+    --- PASS: TestErrorKind_String/InvalidRequest (0.00s)
+    --- PASS: TestErrorKind_String/InternalServerError (0.00s)
+=== RUN   TestAPIError_Error
+=== RUN   TestAPIError_Error/Error_with_RequestID
+=== RUN   TestAPIError_Error/Error_without_RequestID
+=== RUN   TestAPIError_Error/Error_with_cause
+--- PASS: TestAPIError_Error (0.00s)
+    --- PASS: TestAPIError_Error/Error_with_RequestID (0.00s)
+    --- PASS: TestAPIError_Error/Error_without_RequestID (0.00s)
+    --- PASS: TestAPIError_Error/Error_with_cause (0.00s)
+=== RUN   TestAPIError_Unwrap
+--- PASS: TestAPIError_Unwrap (0.00s)
+=== RUN   TestAPIError_Unwrap_Nil
+--- PASS: TestAPIError_Unwrap_Nil (0.00s)
+=== RUN   TestAPIError_IsRetryable
+=== RUN   TestAPIError_IsRetryable/Throttling_is_retryable
+=== RUN   TestAPIError_IsRetryable/ModelOverloaded_is_retryable
+=== RUN   TestAPIError_IsRetryable/InternalServerError_is_retryable
+=== RUN   TestAPIError_IsRetryable/ContextWindowOverflow_is_not_retryable
+=== RUN   TestAPIError_IsRetryable/MonthlyLimitReached_is_not_retryable
+=== RUN   TestAPIError_IsRetryable/AuthenticationFailed_is_not_retryable
+=== RUN   TestAPIError_IsRetryable/InvalidRequest_is_not_retryable
+=== RUN   TestAPIError_IsRetryable/Unknown_is_not_retryable
+--- PASS: TestAPIError_IsRetryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/Throttling_is_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/ModelOverloaded_is_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/InternalServerError_is_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/ContextWindowOverflow_is_not_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/MonthlyLimitReached_is_not_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/AuthenticationFailed_is_not_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/InvalidRequest_is_not_retryable (0.00s)
+    --- PASS: TestAPIError_IsRetryable/Unknown_is_not_retryable (0.00s)
+=== RUN   TestAPIError_GetUserMessage
+=== RUN   TestAPIError_GetUserMessage/Throttling_message
+=== RUN   TestAPIError_GetUserMessage/ContextWindowOverflow_message
+=== RUN   TestAPIError_GetUserMessage/ModelOverloaded_message
+=== RUN   TestAPIError_GetUserMessage/MonthlyLimitReached_message
+=== RUN   TestAPIError_GetUserMessage/AuthenticationFailed_message
+=== RUN   TestAPIError_GetUserMessage/InvalidRequest_message
+=== RUN   TestAPIError_GetUserMessage/InternalServerError_message
+=== RUN   TestAPIError_GetUserMessage/Unknown_with_custom_message
+=== RUN   TestAPIError_GetUserMessage/Unknown_without_custom_message
+--- PASS: TestAPIError_GetUserMessage (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/Throttling_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/ContextWindowOverflow_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/ModelOverloaded_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/MonthlyLimitReached_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/AuthenticationFailed_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/InvalidRequest_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/InternalServerError_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/Unknown_with_custom_message (0.00s)
+    --- PASS: TestAPIError_GetUserMessage/Unknown_without_custom_message (0.00s)
+PASS
+ok  	github.com/yourusername/kiro-gateway-go/internal/errors	1.265s
