@@ -66,6 +66,7 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	health["status"] = allHealthy
 	health["timestamp"] = time.Now().UTC().Format(time.RFC3339)
 	health["version"] = version
+	health["routes"] = "/admin/api/routes"
 	
 	if allHealthy {
 		health["message"] = "All systems operational"

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/yourusername/kiro-gateway-go/internal/auth"
@@ -14,6 +13,7 @@ import (
 	"github.com/yourusername/kiro-gateway-go/internal/converters"
 	"github.com/yourusername/kiro-gateway-go/internal/models"
 	"github.com/yourusername/kiro-gateway-go/internal/streaming"
+	"github.com/yourusername/kiro-gateway-go/internal/logging"
 	"github.com/yourusername/kiro-gateway-go/internal/validation"
 )
 
@@ -277,7 +277,7 @@ func (a *AnthropicAdapter) HandleMessages(w http.ResponseWriter, r *http.Request
 	}
 	
 	// Log the request for debugging (redacted in production)
-	if os.Getenv("DEBUG") == "true" || os.Getenv("DEBUG") == "1" {
+	if logging.IsDebugEnabled() {
 		if reqBytes, err := json.MarshalIndent(convStateReq, "", "  "); err == nil {
 			log.Printf("[%s] Conversation state request:\n%s", requestID, string(reqBytes))
 		}

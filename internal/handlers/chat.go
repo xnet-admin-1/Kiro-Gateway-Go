@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -156,7 +155,7 @@ func (h *Handler) handleChatCompletions(w http.ResponseWriter, r *http.Request) 
 	reqCtx.OriginalReq = convStateReq
 	
 	// Log the request for debugging (redacted in production)
-	if os.Getenv("DEBUG") == "true" || os.Getenv("DEBUG") == "1" {
+	if logging.IsDebugEnabled() {
 		if reqBytes, err := json.MarshalIndent(convStateReq, "", "  "); err == nil {
 			log.Printf("[%s] Conversation state request:\n%s", requestID, string(reqBytes))
 		}

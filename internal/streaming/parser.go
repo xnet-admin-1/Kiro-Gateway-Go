@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yourusername/kiro-gateway-go/internal/logging"
 	"github.com/yourusername/kiro-gateway-go/internal/models"
 )
 
@@ -282,6 +283,11 @@ func parseEventStreamBinary(ctx context.Context, resp *http.Response) (<-chan St
 			}
 			
 			// Process message immediately
+			if logging.IsDebugEnabled() {
+				evType, _ := msg.Headers[":event-type"].(string)
+				msgType, _ := msg.Headers[":message-type"].(string)
+				logging.DebugLog("EventStream msg: message-type=%s event-type=%s payload(%d bytes)=%.300s", msgType, evType, len(msg.Payload), string(msg.Payload))
+			}
 			event := processEventStreamMessage(msg)
 			if event != nil {
 				// Send event with cancellation check
@@ -329,6 +335,20 @@ func processEventStreamMessage(msg *EventStreamMessage) *StreamEvent {
 		return nil
 	}
 	
+	// Handle error messages
+	if messageType == "error" {
+		errCode, _ := msg.Headers[":error-code"].(string)
+		errMsg, _ := msg.Headers[":error-message"].(string)
+		if errCode == "" && errMsg == "" && len(msg.Payload) > 0 {
+			errMsg = string(msg.Payload)
+		}
+		if errCode == "" && errMsg == "" {
+			errMsg = "unknown stream error"
+		}
+		log.Printf("[ERROR] EventStream error: code=%s message=%s", errCode, errMsg)
+		return &StreamEvent{Type: "error", Error: fmt.Errorf("stream error: %s %s", errCode, errMsg)}
+	}
+
 	// Only process "event" messages
 	if messageType != "event" {
 		return nil
@@ -427,7 +447,10 @@ func processEventStreamMessage(msg *EventStreamMessage) *StreamEvent {
 		// Final message indicator - could extract metadata here
 		return nil
 	default:
-		log.Printf("[WARN] Unhandled event type: %s", eventType)
+		if eventType == "initial-response" {
+			return nil
+		}
+		log.Printf("[WARN] Unhandled event type: %s (payload: %.200s)", eventType, string(msg.Payload))
 		return nil
 	}
 	

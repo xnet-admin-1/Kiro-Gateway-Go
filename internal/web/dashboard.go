@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"crypto/tls"
 	"embed"
 	"crypto/rand"
 	"encoding/hex"
@@ -117,10 +118,16 @@ func (lc *LogCapture) Unsubscribe(ch chan LogEntry) {
 }
 
 // Dashboard serves the admin web UI
+// RuntimeCfgStore provides access to runtime config values.
+type RuntimeCfgStore interface {
+	GetString(key string) string
+}
+
 type Dashboard struct {
 	authManager *auth.AuthManager
 	config      *config.Config
 	stats       StatsProvider
+	runtimeCfg  RuntimeCfgStore
 	startTime   time.Time
 	mu          sync.RWMutex
 	logCapture  *LogCapture
@@ -137,7 +144,7 @@ type Dashboard struct {
 	auditMu        sync.Mutex
 }
 
-func NewDashboard(am *auth.AuthManager, cfg *config.Config, stats StatsProvider, km *apikeys.PersistentAPIKeyManager) *Dashboard {
+func NewDashboard(am *auth.AuthManager, cfg *config.Config, stats StatsProvider, km *apikeys.PersistentAPIKeyManager, rtCfg RuntimeCfgStore) *Dashboard {
 	lc := newLogCapture(500)
 	// Tee log output to both stderr and our capture buffer
 	log.SetOutput(io.MultiWriter(os.Stderr, lc))
@@ -150,6 +157,7 @@ func NewDashboard(am *auth.AuthManager, cfg *config.Config, stats StatsProvider,
 		authManager: am,
 		config:      cfg,
 		stats:       stats,
+		runtimeCfg:  rtCfg,
 		startTime:   time.Now(),
 		logCapture:  lc,
 		sseClients:  make(map[chan []byte]struct{}),
@@ -166,6 +174,9 @@ func NewDashboard(am *auth.AuthManager, cfg *config.Config, stats StatsProvider,
 			state := ha.DeviceFlowState()
 			state["authenticated"] = ha.IsAuthenticated()
 			d.BroadcastSSOUpdate(state)
+			if ha.IsAuthenticated() {
+				d.addAudit("login", "device-flow", "", "Authentication successful")
+			}
 		})
 	}
 
@@ -191,8 +202,50 @@ func (d *Dashboard) RecordRequest(method, path, model, userID string, status int
 	d.requests = append(d.requests, rec)
 }
 
+// Middleware wraps an http.Handler to record API requests for the dashboard
+func (d *Dashboard) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only track API endpoints, not admin/static
+		p := r.URL.Path
+		if p == "/v1/chat/completions" || p == "/v1/models" || p == "/v1/messages" || p == "/api/chat" {
+			start := time.Now()
+			sw := &statusWriter{ResponseWriter: w, status: 200}
+			next.ServeHTTP(sw, r)
+			d.RecordRequest(r.Method, p, "", "", sw.status, time.Since(start))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+	written bool
+}
+
+func (sw *statusWriter) WriteHeader(code int) {
+	if !sw.written {
+		sw.status = code
+		sw.written = true
+	}
+	sw.ResponseWriter.WriteHeader(code)
+}
+
+func (sw *statusWriter) Flush() {
+	if f, ok := sw.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/", d.servePage)
+	mux.HandleFunc("/manifest.json", d.serveStatic("static/manifest.json", "application/json"))
+	mux.HandleFunc("/sw.js", d.serveStatic("static/sw.js", "application/javascript"))
+	mux.HandleFunc("/icon-192.png", d.serveStatic("static/icon-192.png", "image/png"))
+	mux.HandleFunc("/icon-512.png", d.serveStatic("static/icon-512.png", "image/png"))
+	mux.HandleFunc("/screenshot-wide.png", d.serveStatic("static/screenshot-wide.png", "image/png"))
+	mux.HandleFunc("/screenshot-narrow.png", d.serveStatic("static/screenshot-narrow.png", "image/png"))
 	mux.HandleFunc("/admin/api/login", d.handleLogin)
 	mux.HandleFunc("/admin/api/stats", d.handleStatsSSE)
 	mux.HandleFunc("/admin/api/settings", d.handleSettings)
@@ -207,6 +260,59 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/api/keys/revoke", d.handleKeyRevoke)
 	mux.HandleFunc("/admin/api/keys", d.handleKeysList)
 	mux.HandleFunc("/admin/api/audit", d.handleAuditLog)
+	mux.HandleFunc("/admin/api/routes", d.handleRoutes)
+}
+
+func (d *Dashboard) AuthWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !d.checkAuth(r) {
+			http.Error(w, "Unauthorized", 401)
+			return
+		}
+		h(w, r)
+	}
+}
+
+func (d *Dashboard) handleRoutes(w http.ResponseWriter, r *http.Request) {
+	if !d.checkAuth(r) {
+		http.Error(w, "Unauthorized", 401)
+		return
+	}
+	routes := map[string]interface{}{
+		"public": []string{
+			"GET /health",
+			"GET /v1/models",
+			"POST /v1/chat/completions",
+		},
+		"admin": []string{
+			"GET  /admin/",
+			"POST /admin/api/login",
+			"GET  /admin/api/stats",
+			"GET  /admin/api/logs",
+			"GET  /admin/api/sso",
+			"POST /admin/api/device-auth",
+			"GET  /admin/api/settings",
+			"POST /admin/api/settings",
+			"GET  /admin/api/models",
+			"GET  /admin/api/keys",
+			"POST /admin/api/keys/issue",
+			"POST /admin/api/keys/rotate",
+			"POST /admin/api/keys/revoke",
+			"GET  /admin/api/audit",
+			"GET  /admin/api/routes",
+			"GET  /admin/api/config",
+			"POST /admin/api/config",
+			"GET  /admin/api/config/{key}",
+			"PUT  /admin/api/config/{key}",
+			"DELETE /admin/api/config/{key}",
+			"GET  /admin/api/accounts",
+			"GET  /admin/api/accounts/export",
+			"POST /admin/api/accounts/import",
+			"POST /admin/api/accounts/import/sso-token",
+			"POST /admin/api/accounts/import/kiro-cli",
+		},
+	}
+	writeJSON(w, 200, routes)
 }
 
 func (d *Dashboard) checkAuth(r *http.Request) bool {
@@ -221,6 +327,15 @@ func (d *Dashboard) servePage(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	} else {
 		data, _ := staticFiles.ReadFile("static/login.html")
+		w.Write(data)
+	}
+}
+
+func (d *Dashboard) serveStatic(path, contentType string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, _ := staticFiles.ReadFile(path)
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Cache-Control", "public, max-age=86400")
 		w.Write(data)
 	}
 }
@@ -295,9 +410,14 @@ func (d *Dashboard) handleModels(w http.ResponseWriter, r *http.Request) {
 	}
 	// Proxy to the gateway's own /v1/models endpoint using the first valid API key
 	key := d.getProxyKey()
-	req, _ := http.NewRequest("GET", "http://localhost:"+d.config.Port+"/v1/models", nil)
+	scheme := "http"
+	if os.Getenv("TLS_CERT") != "" {
+		scheme = "https"
+	}
+	req, _ := http.NewRequest("GET", scheme+"://127.0.0.1:"+d.config.Port+"/v1/models", nil)
 	req.Header.Set("Authorization", "Bearer "+key)
-	resp, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	resp, err := (&http.Client{Transport: tr}).Do(req)
 	if err != nil {
 		writeJSON(w, 500, map[string]string{"error": err.Error()})
 		return
@@ -308,9 +428,15 @@ func (d *Dashboard) handleModels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Dashboard) getProxyKey() string {
-	// Try proxy key first, then admin key
 	if d.config.ProxyAPIKey != "" {
 		return d.config.ProxyAPIKey
+	}
+	if d.keyManager != nil {
+		for _, k := range d.keyManager.ListKeys("") {
+			if k.IsActive {
+				return k.Key
+			}
+		}
 	}
 	return d.config.AdminAPIKey
 }
@@ -484,6 +610,13 @@ func (d *Dashboard) broadcastLoop() {
 	}
 }
 
+func getAuthModeLabel(mode auth.AuthMode) string {
+	if mode == auth.AuthModeSigV4 {
+		return "SigV4"
+	}
+	return "Bearer"
+}
+
 func (d *Dashboard) collectStats() map[string]interface{} {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
@@ -498,6 +631,7 @@ func (d *Dashboard) collectStats() map[string]interface{} {
 		"mem_sys_mb":   fmt.Sprintf("%.1f", float64(mem.Sys)/1024/1024),
 		"gc_cycles":    mem.NumGC,
 		"auth_type":    string(d.authManager.GetAuthType()),
+		"auth_mode":    getAuthModeLabel(d.authManager.GetAuthMode()),
 		"region":       d.authManager.GetRegion(),
 		"profile_arn":  d.authManager.GetProfileArn(),
 		"port":         d.config.Port,
@@ -609,6 +743,7 @@ func (d *Dashboard) execCmd(input string) string {
 		state := ha.DeviceFlowState()
 		state["authenticated"] = false
 		d.BroadcastSSOUpdate(state)
+		d.addAudit("logout", "admin", "", "Manual logout")
 		return "Token cleared. Run 'login' to re-authenticate."
 	case "status":
 		b, _ := json.MarshalIndent(d.collectStats(), "", "  ")
@@ -700,10 +835,37 @@ func (d *Dashboard) handleDeviceAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	ha := d.authManager.GetHeadlessAuth()
 	if ha == nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{"active": false, "error": "not in headless mode"})
+		writeJSON(w, 400, map[string]string{"error": "not in headless mode"})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method == http.MethodPost {
+		// Start a new device flow login
+		if ha.IsAuthenticated() {
+			writeJSON(w, 200, map[string]string{"status": "already authenticated"})
+			return
+		}
+		// Apply runtime config overrides before login
+		if d.runtimeCfg != nil {
+			ha.UpdateConfig(
+				d.runtimeCfg.GetString("sso_start_url"),
+				d.runtimeCfg.GetString("sso_region"),
+				d.runtimeCfg.GetString("sso_account_id"),
+				d.runtimeCfg.GetString("sso_role_name"),
+			)
+		}
+		url, code, err := ha.StartLogin(context.Background())
+		if err != nil {
+			writeJSON(w, 500, map[string]string{"error": err.Error()})
+			return
+		}
+		// Broadcast to SSE clients
+		state := map[string]interface{}{"pending": true, "authenticated": false, "verification_url": url, "user_code": code}
+		d.BroadcastSSOUpdate(state)
+		d.addAudit("login", "device-flow", code, "Device flow started")
+		writeJSON(w, 200, map[string]interface{}{"status": "pending", "verification_url": url, "user_code": code})
+		return
+	}
 	state := ha.DeviceFlowState()
 	state["authenticated"] = ha.IsAuthenticated()
 	json.NewEncoder(w).Encode(state)
@@ -716,15 +878,23 @@ func (d *Dashboard) getSSOState() map[string]interface{} {
 		"region":    d.authManager.GetRegion(),
 	}
 	if ha != nil {
-		df := ha.DeviceFlowState()
-		if df["active"].(bool) {
-			// Device flow active — always show pending, never authenticated
-			state["pending"] = true
-			state["authenticated"] = false
-			state["user_code"] = df["user_code"]
-			state["verification_url"] = df["verify_url"]
+		isAuth := ha.IsAuthenticated()
+		// Also consider authenticated if we have a working profile (server can make API calls)
+		if !isAuth && d.authManager.GetProfileArn() != "" {
+			isAuth = true
+		}
+		if isAuth {
+			state["authenticated"] = true
 		} else {
-			state["authenticated"] = ha.IsAuthenticated()
+			df := ha.DeviceFlowState()
+			if df["active"].(bool) {
+				state["pending"] = true
+				state["authenticated"] = false
+				state["user_code"] = df["user_code"]
+				state["verification_url"] = df["verify_url"]
+			} else {
+				state["authenticated"] = false
+			}
 		}
 	} else {
 		state["authenticated"] = d.authManager.GetProfileArn() != ""

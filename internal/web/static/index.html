@@ -3,222 +3,151 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Kiro Gateway</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--dim:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922;--input:#0d1117}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
 a{color:var(--accent);text-decoration:none}
-
-
-
-#app{display:block;padding:16px;max-width:640px;margin:0 auto;padding-bottom:60px}
+#app{padding:16px;max-width:1200px;margin:0 auto}
 .hdr{display:flex;align-items:center;gap:8px;padding:12px 0;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);margin-bottom:16px}
-.hdr h1{font-size:17px;color:var(--accent);font-weight:600}
-
-.section{margin-bottom:20px}
-.section h2{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
-.section h2::after{content:'▾';font-size:10px}
-.section.collapsed h2::after{content:'▸'}
-.section.collapsed .sb{display:none}
-
-.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.sc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px}
-.sc .l{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.3px}
-.sc .v{font-size:18px;font-weight:600;margin-top:2px}
+.hdr h1{font-size:18px;color:var(--accent);font-weight:600}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}.grid .full{grid-column:1/-1}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card h2{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.sc{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px}
+.sc .l{font-size:10px;color:var(--dim);text-transform:uppercase}
+.sc .v{font-size:16px;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sc .v.g{color:var(--green)}.sc .v.a{color:var(--accent)}.sc .v.y{color:var(--yellow)}
-
-/* Logs */
-#logbox{background:#000;border-radius:8px;border:1px solid var(--border);height:250px;overflow-y:auto;padding:8px;font-family:'SF Mono',Monaco,Consolas,monospace;font-size:12px;line-height:1.5;color:#8b949e;-webkit-overflow-scrolling:touch}
-#logbox .t{color:var(--dim);margin-right:6px}
-#logbox .m{color:#c9d1d9}
+#logbox{background:#000;border-radius:6px;border:1px solid var(--border);height:220px;overflow-y:auto;padding:8px;font-family:'SF Mono',Monaco,Consolas,monospace;font-size:11px;line-height:1.5;color:#8b949e}
+#logbox .t{color:var(--dim);margin-right:6px}#logbox .m{color:#c9d1d9}
 .log-controls{display:flex;gap:8px;margin-bottom:8px}
-.log-controls input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:13px}
-
-/* Models */
-.model-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
-.model-item .name{font-size:14px;font-weight:500}
-.model-item .badge{font-size:11px}
-
-
-.req-item{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:4px;font-size:13px;flex-wrap:wrap}
-.req-item .time{color:var(--dim);font-size:11px;font-family:monospace}
-.req-item .path{color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* Keys */
-.key-item{display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
-.key-item .top{display:flex;justify-content:space-between;align-items:center}
-.key-item .kname{font-weight:500;font-size:14px}
-.key-item .kprev{font-family:monospace;font-size:12px;color:var(--dim)}
-.key-item .meta{font-size:11px;color:var(--dim)}
-.btn-del{background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer}
-
-/* Settings */
-.sr{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
-.sr label{font-size:13px;color:var(--dim)}
-.sr input{padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:15px;width:100%}
-.btn{padding:10px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;width:100%}
+.log-controls input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:12px}
+.sso{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center}
+.sso .code{font-size:24px;font-weight:700;letter-spacing:3px;color:var(--accent);margin:8px 0}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.bg{background:rgba(63,185,80,.15);color:var(--green)}.by{background:rgba(210,153,34,.15);color:var(--yellow)}
+.model-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;font-size:13px}
+.key-item{padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:4px}
+.key-item .top{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.key-item .kname{font-weight:500}.key-item .meta{font-size:11px;color:var(--dim)}
+.key-item .kprev{font-family:monospace;font-size:11px;color:var(--dim)}
+.req-item{display:flex;gap:6px;align-items:center;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:3px;font-size:12px}
+.req-item .time{color:var(--dim);font-size:10px;font-family:monospace}
+.req-item .path{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.sr label{font-size:12px;color:var(--dim)}
+.sr input{padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:13px;width:100%}
+@media(min-width:900px){.sr{flex-direction:row;align-items:center;gap:10px}.sr label{min-width:160px;flex-shrink:0}}
+.btn{padding:8px 16px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:13px;cursor:pointer}
 .btn:active{opacity:.8}
-.btn-sm{padding:6px 14px;font-size:12px;width:auto;border-radius:6px}
-
-/* Terminal */
-#term{background:#000;border-radius:8px;border:1px solid var(--border);font-family:'SF Mono',Monaco,Consolas,monospace;overflow:hidden}
-#tout{height:180px;overflow-y:auto;padding:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;color:#c9d1d9;-webkit-overflow-scrolling:touch}
-#trow{display:flex;align-items:center;padding:8px 10px;border-top:1px solid var(--border);gap:6px}
-#trow span{color:var(--green);font-size:13px;white-space:nowrap}
-#tin{flex:1;background:none;border:none;color:var(--text);font-size:15px;font-family:inherit;outline:none}
-
-/* SSO */
-.sso{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;text-align:center}
-.sso .code{font-size:28px;font-weight:700;letter-spacing:3px;color:var(--accent);margin:12px 0}
-.sso .totp{font-size:24px;font-weight:600;color:var(--yellow);margin:8px 0}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:500}
-.bg{background:rgba(63,185,80,.15);color:var(--green)}
-.by{background:rgba(210,153,34,.15);color:var(--yellow)}
+.btn-sm{padding:5px 12px;font-size:11px;border-radius:5px;border:none;cursor:pointer;background:var(--accent);color:#fff}
+.btn-del{background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer}
+.cfg-add{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.cfg-add input{flex:1;min-width:80px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:12px}
+.cfg-entry{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;font-size:12px}
+.cfg-entry .ck{font-weight:600;min-width:80px;word-break:break-all}
+.cfg-entry .cv{flex:1;font-family:monospace;font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfg-entry input{flex:1;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:var(--input);color:var(--text);font-family:monospace;font-size:11px}
+.scrollbox{max-height:220px;overflow-y:auto}
+.dim{color:var(--dim);font-size:12px}
+.mt8{margin-top:8px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99}
 .toast.show{opacity:1}
-.dim{color:var(--dim);font-size:13px}
-.mt8{margin-top:8px}
-
-/* Desktop layout */
-@media(min-width:900px){
-  #app{max-width:1200px;padding:20px 32px}
-  .hdr h1{font-size:20px}
-  .sg{grid-template-columns:repeat(4,1fr)}
-  .sections{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;align-items:start}
-  .sections .section{break-inside:avoid}
-  #sec-sso{grid-column:1}
-  #sec-audit{grid-column:2}
-  .full-width{grid-column:1/-1}
-  #logbox{height:350px}
-  #tout{height:280px}
-  .sc .v{font-size:20px}
-  .sr{flex-direction:row;align-items:center;gap:12px}
-  .sr label{min-width:180px;flex-shrink:0}
-  .sr input{font-size:14px}
-  .btn{width:auto}
-  .model-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .model-grid .model-item{margin-bottom:0}
-  .req-item{flex-wrap:nowrap}
-}
 </style>
 </head>
 <body>
-
-
-
 <div id="app">
-  <div class="hdr"><h1>⚡ Kiro Gateway</h1></div>
+<div class="hdr"><h1>⚡ Kiro Gateway</h1></div>
+<div class="grid">
 
-  <div class="sections">
-  <div class="section full-width" id="sec-stats">
-    <h2 onclick="toggle('sec-stats')">Live Stats</h2>
-    <div class="sb"><div class="sg" id="sg"></div></div>
+<!-- Stats -->
+<div class="card full"><h2>Live Stats</h2><div class="sg" id="sg"></div></div>
+
+<!-- Auth -->
+<div class="card full"><h2>Authentication</h2>
+  <div id="auth-status"></div>
+  <div id="acc-list" style="margin-top:10px"></div>
+  <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+    <button class="btn-sm" style="background:var(--green)" onclick="authLogin()">Login</button>
+    <button class="btn-sm" style="background:var(--red)" onclick="authLogout()">Logout</button>
+    <button class="btn-sm" onclick="accScanCLI()">Scan Kiro CLI</button>
+    <button class="btn-sm" onclick="accShowImport()">Import Token</button>
+    <button class="btn-sm" style="background:var(--dim)" onclick="accExport()">Export</button>
+    <button class="btn-sm" style="background:var(--dim)" onclick="document.getElementById('auth-cfg').style.display=document.getElementById('auth-cfg').style.display==='none'?'block':'none'">⚙ Config</button>
   </div>
-
-
-
-
-  <div class="section full-width" id="sec-logs">
-    <h2 onclick="toggle('sec-logs')">Live Logs</h2>
-    <div class="sb">
-      <div class="log-controls"><input id="log-filter" placeholder="Filter logs..." oninput="filterLogs()"></div>
-      <div id="logbox"></div>
-    </div>
+  <div id="auth-cfg" style="display:none;margin-top:10px">
+    <div class="sr"><label for="auth-start-url">SSO Start URL</label><input id="auth-start-url" placeholder="https://your-org.awsapps.com/start"></div>
+    <div class="sr"><label for="auth-region">SSO Region</label><input id="auth-region" placeholder="us-east-1"></div>
+    <div class="sr"><label for="auth-account-id">Account ID</label><input id="auth-account-id" placeholder="123456789012"></div>
+    <div class="sr"><label for="auth-role-name">Role Name</label><input id="auth-role-name" placeholder="AdministratorAccess"></div>
+    <button class="btn-sm" style="background:var(--green);margin-top:6px" onclick="saveAuthCfg()">Save Auth Config</button>
   </div>
-
-
-
-
-  <div class="section" id="sec-models">
-    <h2 onclick="toggle('sec-models')">Models</h2>
-    <div class="sb" style="max-height:260px;overflow-y:auto"><div class="model-grid" id="models-list"><p class="dim">Loading...</p></div>
-  </div></div>
-
-
-
-
-  <div class="section" id="sec-keys">
-    <h2 onclick="toggle('sec-keys')">API Keys</h2>
-    <div class="sb">
-      <div id="keys-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <input id="key-name" placeholder="Key name..." style="flex:1;min-width:150px;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:14px">
-        <button class="btn btn-sm" style="background:var(--green)" onclick="issueKey()">Issue</button>
-        <button class="btn btn-sm" style="background:var(--yellow);color:#000" onclick="rotateKey()">Rotate</button>
-        <button class="btn btn-sm" style="background:var(--red)" onclick="revokeKey()">Revoke</button>
-      </div>
-      <div id="key-result" style="margin-top:8px;font-family:monospace;font-size:12px;color:var(--green);word-break:break-all;min-height:16px"></div>
-    </div>
-  </div>
-
-
-
-
-  <div class="section" id="sec-settings">
-    <h2 onclick="toggle('sec-settings')">Settings</h2>
-    <div class="sb">
-      <div id="sf"></div>
-      <button class="btn" onclick="saveSettings()" style="margin-top:8px">Save</button>
-    </div>
-  </div>
-
-
-
-
-  <div class="section" id="sec-term">
-    <h2 onclick="toggle('sec-term')">Terminal</h2>
-    <div class="sb">
-      <div id="term">
-        <div id="tout">Type 'help' for commands\n</div>
-        <div id="trow"><span>kiro&gt;</span><input id="tin" placeholder="command..." onkeydown="tk(event)"></div>
-      </div>
-    </div>
+  <div id="acc-import-form" style="display:none;margin-top:10px">
+    <div class="cfg-add"><input id="acc-name" placeholder="name"><input id="acc-token" placeholder="access_token" required><input id="acc-refresh" placeholder="refresh_token"></div>
+    <div class="cfg-add"><input id="acc-client-id" placeholder="client_id"><input id="acc-client-secret" placeholder="client_secret"><button class="btn-sm" style="background:var(--green)" onclick="accImportToken()">Save</button></div>
   </div>
 </div>
 
+<!-- Logs -->
+<div class="card full"><h2>Live Logs</h2>
+  <div class="log-controls"><input id="log-filter" placeholder="Filter..." oninput="filterLogs()"></div>
+  <div id="logbox"></div>
+</div>
 
+<!-- Models -->
+<div class="card"><h2>Models</h2><div class="scrollbox" id="models-list"><p class="dim">Loading...</p></div></div>
 
-
-  <div class="section" id="sec-sso">
-    <h2 onclick="toggle('sec-sso')">SSO Auth</h2>
-    <div class="sb" id="sso"></div>
+<!-- API Keys -->
+<div class="card"><h2>API Keys</h2>
+  <div class="scrollbox" id="keys-list"></div>
+  <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+    <input id="key-name" placeholder="Key name..." style="flex:1;min-width:100px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:12px">
+    <button class="btn-sm" style="background:var(--green)" onclick="issueKey()">Issue</button>
+    <button class="btn-sm" style="background:var(--yellow);color:#000" onclick="rotateKey()">Rotate</button>
+    <button class="btn-sm" style="background:var(--red)" onclick="revokeKey()">Revoke</button>
   </div>
+  <div id="key-result" style="margin-top:6px;font-family:monospace;font-size:11px;color:var(--green);word-break:break-all"></div>
+</div>
 
+<!-- Settings -->
+<div class="card"><h2>Settings</h2>
+  <div id="sf"></div>
+  <button class="btn" onclick="saveSettings()" style="margin-top:8px">Save</button>
+</div>
 
+<!-- Audit Log -->
+<div class="card"><h2>Audit Log</h2><div class="scrollbox" id="audit-list"><p class="dim">No entries</p></div></div>
 
+<!-- Runtime Config -->
+<div class="card full"><h2>Runtime Config</h2>
+  <div class="cfg-add"><input id="cfg-k" placeholder="key"><input id="cfg-v" placeholder="value"><button class="btn-sm" onclick="cfgAdd()">Add</button></div>
+  <div id="cfg-list"></div>
+</div>
 
-  <div class="section" id="sec-audit">
-    <h2 onclick="toggle('sec-audit')">Audit Log</h2>
-    <div class="sb" id="audit-list"><p class="dim">No audit entries</p></div>
-  </div>
-
-
-
-
-
-
-  </div>
-
+</div><!-- /grid -->
+</div><!-- /app -->
 <div class="toast" id="toast"></div>
-
 <script>
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
-function toggle(id){document.getElementById(id).classList.toggle('collapsed')}
-
-// Auth is handled server-side; if we're here, we're authenticated
-// Verify session is still valid before loading
 fetch('api/settings').then(r=>{if(r.status===401)location.reload();else init()}).catch(()=>init());
-
-function init(){startStats();startLogs();loadModels();loadKeys();loadAudit();loadSettings();startSSO()}
+function init(){startStats();startLogs();loadModels();loadKeys();loadAudit();loadSettings();startSSO();cfgLoad();accLoad();loadAuthCfg()}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 // Stats
 function startStats(){
   const es=new EventSource('api/stats');
-  es.onerror=()=>{es.close();setTimeout(()=>location.reload(),2000)};
+  es.onerror=()=>{es.close();setTimeout(()=>location.reload(),3000)};
   es.onmessage=e=>{
     const s=JSON.parse(e.data),g=document.getElementById('sg');
-    const c=[['Uptime',s.uptime,''],['Goroutines',s.goroutines,'a'],['Mem',s.mem_alloc_mb+' MB',''],['Requests',s.total_requests||0,'a'],
-      ['GC',s.gc_cycles,''],['Auth',s.auth_type,'g'],['Region',s.region,''],['Profile',s.profile_arn?s.profile_arn.split('/').pop():'—',s.profile_arn?'g':'']];
+    const c=[['Uptime',s.uptime,''],['Requests',s.total_requests||0,'a'],['Mem',s.mem_alloc_mb+' MB',''],['Goroutines',s.goroutines,'a'],
+      ['Auth',s.auth_type,'g'],['Mode',s.auth_mode||'—','a'],['Region',s.region,''],['Profile',s.profile_arn?s.profile_arn.split('/').pop():'—',s.profile_arn?'g':'']];
     if(s.response_cache)c.push(['Cache Hit',s.response_cache.hits||0,'g'],['Cache Miss',s.response_cache.misses||0,'']);
     g.innerHTML=c.map(([l,v,cls])=>`<div class="sc"><div class="l">${l}</div><div class="v ${cls}">${v}</div></div>`).join('')
   }
@@ -226,119 +155,51 @@ function startStats(){
 
 // Logs
 let allLogs=[];
-function startLogs(){
-  const es=new EventSource('api/logs');
-  es.onmessage=e=>{
-    const d=JSON.parse(e.data);
-    allLogs.push(d);
-    if(allLogs.length>500)allLogs.shift();
-    appendLog(d)
-  }
-}
-function appendLog(d){
-  const box=document.getElementById('logbox'),f=document.getElementById('log-filter').value.toLowerCase();
-  if(f&&!d.message.toLowerCase().includes(f))return;
-  const div=document.createElement('div');
-  div.innerHTML=`<span class="t">${d.time}</span><span class="m">${esc(d.message)}</span>`;
-  box.appendChild(div);
-  if(box.children.length>300)box.removeChild(box.firstChild);
-  box.scrollTop=box.scrollHeight
-}
-function filterLogs(){
-  const box=document.getElementById('logbox'),f=document.getElementById('log-filter').value.toLowerCase();
-  box.innerHTML='';
-  allLogs.filter(d=>!f||d.message.toLowerCase().includes(f)).slice(-100).forEach(d=>appendLog(d))
-}
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function startLogs(){const es=new EventSource('api/logs');es.onmessage=e=>{const d=JSON.parse(e.data);allLogs.push(d);if(allLogs.length>500)allLogs.shift();appendLog(d)}}
+function appendLog(d){const box=document.getElementById('logbox'),f=document.getElementById('log-filter').value.toLowerCase();if(f&&!d.message.toLowerCase().includes(f))return;const div=document.createElement('div');div.innerHTML=`<span class="t">${d.time}</span><span class="m">${esc(d.message)}</span>`;box.appendChild(div);if(box.children.length>300)box.removeChild(box.firstChild);box.scrollTop=box.scrollHeight}
+function filterLogs(){const box=document.getElementById('logbox'),f=document.getElementById('log-filter').value.toLowerCase();box.innerHTML='';allLogs.filter(d=>!f||d.message.toLowerCase().includes(f)).slice(-100).forEach(d=>appendLog(d))}
 
 // Models
-async function loadModels(){
-  try{
-    const d=await(await fetch('api/models')).json();
-    const el=document.getElementById('models-list');
-    if(!d.data||!d.data.length){el.innerHTML='<p class="dim">No models</p>';return}
-    el.innerHTML=d.data.map(m=>`<div class="model-item"><span class="name">${m.id}</span><span class="badge bg">${m.owned_by||'aws'}</span></div>`).join('')
-  }catch(e){document.getElementById('models-list').innerHTML='<p class="dim">Failed to load</p>'}
-}
-
+async function loadModels(){try{const d=await(await fetch('api/models')).json();const el=document.getElementById('models-list');if(!d.data||!d.data.length){el.innerHTML='<p class="dim">No models</p>';return}el.innerHTML=d.data.map(m=>`<div class="model-item"><span>${m.id}</span><span class="badge bg">${m.owned_by||'aws'}</span></div>`).join('')}catch(e){document.getElementById('models-list').innerHTML='<p class="dim">Failed</p>'}}
 
 // Keys
-async function loadKeys(){
-  try{
-    const d=await(await fetch('api/keys')).json();
-    const el=document.getElementById('keys-list');
-    if(!d.keys||!d.keys.length){el.innerHTML='<p class="dim">No API keys</p>';return}
-    el.innerHTML=d.keys.map(k=>{
-      const status=k.is_active?'<span class="badge bg">active</span>':'<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">revoked</span>';
-      return`<div class="key-item"><div class="top"><span class="kname">${k.name||'unnamed'} ${status}</span><span class="dim" style="font-size:11px">${k.usage_count||0} uses</span></div><span class="kprev">${k.key_preview}</span><span class="meta">${k.created_at||''}</span></div>`
-    }).join('')
-  }catch(e){document.getElementById('keys-list').innerHTML='<p class="dim">Failed to load</p>'}
-}
-function getKeyName(){const n=document.getElementById('key-name').value.trim();if(!n)toast('Enter a key name');return n}
-async function issueKey(){
-  const name=getKeyName();if(!name)return;
-  const r=await fetch('api/keys/issue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  if(r.ok){const d=await r.json();document.getElementById('key-result').textContent='New key: '+d.key;loadKeys();loadAudit();toast('Key issued')}
-  else{const e=await r.json();toast(e.error||'Failed')}
-}
-async function rotateKey(){
-  const name=getKeyName();if(!name)return;
-  if(!confirm('Rotate key "'+name+'"? Old key will be revoked.'))return;
-  const r=await fetch('api/keys/rotate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  if(r.ok){const d=await r.json();document.getElementById('key-result').textContent='New key: '+d.key;loadKeys();loadAudit();toast('Key rotated')}
-  else{const e=await r.json();toast(e.error||'Failed')}
-}
-async function revokeKey(){
-  const name=getKeyName();if(!name)return;
-  if(!confirm('Revoke all active keys named "'+name+'"?'))return;
-  const r=await fetch('api/keys/revoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  if(r.ok){document.getElementById('key-result').textContent='';loadKeys();loadAudit();toast('Key revoked')}
-  else{const e=await r.json();toast(e.error||'No active key found')}
-}
-async function loadAudit(){
-  try{
-    const d=await(await fetch('api/audit')).json();
-    const el=document.getElementById('audit-list');
-    if(!d.length){el.innerHTML='<p class="dim">No audit entries</p>';return}
-    const colors={issue:'var(--green)',rotate:'var(--yellow)',revoke:'var(--red)'};
-    el.innerHTML=d.slice(0,50).map(e=>`<div class="req-item"><span class="time">${e.time}</span><span style="color:${colors[e.action]||'var(--text)'};font-weight:600;font-size:12px">${e.action.toUpperCase()}</span><span class="path">${e.key_name}</span><span class="dim" style="font-size:11px">${e.key_id}</span></div>`).join('')
-  }catch(e){}
-}
+async function loadKeys(){try{const d=await(await fetch('api/keys')).json();const el=document.getElementById('keys-list');if(!d.keys||!d.keys.length){el.innerHTML='<p class="dim">No keys</p>';return}el.innerHTML=d.keys.map(k=>{const st=k.is_active?'<span class="badge bg">active</span>':'<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">revoked</span>';return`<div class="key-item"><div class="top"><span class="kname">${k.name||'—'} ${st}</span><span class="dim">${k.usage_count||0} uses</span></div><span class="kprev">${k.key_preview||''}</span></div>`}).join('')}catch(e){}}
+function getKeyName(){const n=document.getElementById('key-name').value.trim();if(!n)toast('Enter key name');return n}
+async function issueKey(){const name=getKeyName();if(!name)return;const r=await fetch('api/keys/issue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(r.ok){const d=await r.json();document.getElementById('key-result').textContent='Key: '+d.key;loadKeys();loadAudit();toast('Issued')}else toast('Failed')}
+async function rotateKey(){const name=getKeyName();if(!name)return;if(!confirm('Rotate "'+name+'"?'))return;const r=await fetch('api/keys/rotate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(r.ok){const d=await r.json();document.getElementById('key-result').textContent='Key: '+d.key;loadKeys();loadAudit();toast('Rotated')}else toast('Failed')}
+async function revokeKey(){const name=getKeyName();if(!name)return;if(!confirm('Revoke "'+name+'"?'))return;const r=await fetch('api/keys/revoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(r.ok){loadKeys();loadAudit();toast('Revoked')}else toast('Failed')}
+
+// Audit
+async function loadAudit(){try{const d=await(await fetch('api/audit')).json();const el=document.getElementById('audit-list');if(!d.length){el.innerHTML='<p class="dim">No entries</p>';return}const colors={issue:'var(--green)',rotate:'var(--yellow)',revoke:'var(--red)',login:'var(--accent)',logout:'var(--dim)'};el.innerHTML=d.slice(0,50).map(e=>`<div class="req-item"><span class="time">${e.time}</span><span style="color:${colors[e.action]||'var(--text)'};font-weight:600">${e.action.toUpperCase()}</span><span class="path">${e.key_name||''} ${e.detail||''}</span></div>`).join('')}catch(e){}}
 
 // Settings
-async function loadSettings(){
-  const cs=await(await fetch('api/settings')).json();
-  const f=document.getElementById('sf');
-  const fields=[{k:'max_connections',l:'Max Connections',t:'number'},{k:'first_token_timeout_s',l:'First Token Timeout (s)',t:'number'},
-    {k:'multimodal_timeout_s',l:'Multimodal Timeout (s)',t:'number'},{k:'hidden_models',l:'Hidden Models',t:'text'}];
-  f.innerHTML=fields.map(({k,l,t})=>{let v=cs[k];if(Array.isArray(v))v=v.join(', ');return`<div class="sr"><label>${l}</label><input id="s-${k}" type="${t}" value="${v||''}"></div>`}).join('')
-}
-async function saveSettings(){
-  const u={max_connections:parseInt(document.getElementById('s-max_connections').value)||100,
-    first_token_timeout_s:parseInt(document.getElementById('s-first_token_timeout_s').value)||30,
-    multimodal_timeout_s:parseInt(document.getElementById('s-multimodal_timeout_s').value)||90,
-    };
-  const h=document.getElementById('s-hidden_models').value;
-  u.hidden_models=h?h.split(',').map(s=>s.trim()).filter(Boolean):[];
-  await fetch('api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(u)});
-  toast('✓ Saved')
-}
+async function loadSettings(){const cs=await(await fetch('api/settings')).json();const f=document.getElementById('sf');const fields=[{k:'max_connections',l:'Max Connections',t:'number'},{k:'first_token_timeout_s',l:'First Token Timeout (s)',t:'number'},{k:'multimodal_timeout_s',l:'Multimodal Timeout (s)',t:'number'},{k:'hidden_models',l:'Hidden Models',t:'text'}];f.innerHTML=fields.map(({k,l,t})=>{let v=cs[k];if(Array.isArray(v))v=v.join(', ');return`<div class="sr"><label for="s-${k}">${l}</label><input id="s-${k}" type="${t}" value="${v||''}"></div>`}).join('')}
+async function saveSettings(){const u={max_connections:+document.getElementById('s-max_connections').value||100,first_token_timeout_s:+document.getElementById('s-first_token_timeout_s').value||120,multimodal_timeout_s:+document.getElementById('s-multimodal_timeout_s').value||180};const h=document.getElementById('s-hidden_models').value;u.hidden_models=h?h.split(',').map(s=>s.trim()).filter(Boolean):[];await fetch('api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(u)});toast('✓ Saved')}
 
-// Terminal
-const ch=[];let hi=-1;
-async function runCmd(){const i=document.getElementById('tin'),c=i.value.trim();if(!c)return;ch.unshift(c);hi=-1;const o=document.getElementById('tout');o.textContent+='kiro> '+c+'\n';i.value='';const r=await(await fetch('api/terminal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:c})})).json();o.textContent+=(r.output||'')+'\n';o.scrollTop=o.scrollHeight}
-function tk(e){if(e.key==='Enter')runCmd();else if(e.key==='ArrowUp'){e.preventDefault();if(hi<ch.length-1)e.target.value=ch[++hi]}else if(e.key==='ArrowDown'){e.preventDefault();hi>0?e.target.value=ch[--hi]:(hi=-1,e.target.value='')}}
+// Auth
+function startSSO(){const es=new EventSource('api/sso');es.onmessage=e=>{const s=JSON.parse(e.data),el=document.getElementById('auth-status');if(!el)return;if(s.pending)el.innerHTML=`<div class="sso"><p style="font-weight:600">🔐 Device Authorization</p><a href="${s.verification_url}" target="_blank" style="font-size:12px;word-break:break-all">${s.verification_url}</a><div class="code">${s.user_code}</div><p class="dim">Open link, enter code</p></div>`;else if(s.authenticated)el.innerHTML=`<div class="sso"><p style="font-weight:600">✅ Authenticated</p><p class="dim mt8"><span class="badge bg">${s.auth_type||'SSO'}</span> <span class="badge by">${s.auth_mode||''}</span> ${s.region||''}</p></div>`;else el.innerHTML=`<div class="sso"><p style="font-weight:600">⚠️ Not Authenticated</p><p class="dim mt8">Click Login or import a token</p></div>`}}
+async function authLogin(){const r=await fetch('api/device-auth',{method:'POST'});if(r.ok){const d=await r.json();if(d.verification_url)toast('Check auth card for link');else toast(d.status||'Started')}else toast('Failed')}
+async function authLogout(){if(!confirm('Logout and clear token?'))return;await fetch('api/terminal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'logout'})});toast('Logged out')}
+async function loadAuthCfg(){const keys=['sso_start_url','sso_region','sso_account_id','sso_role_name'];for(const k of keys){const r=await fetch('api/config/'+k);if(r.ok){const d=await r.json();const el=document.getElementById('auth-'+k.replace('sso_','').replace('_','-'));if(el&&d.value)el.value=d.value}}}
+async function saveAuthCfg(){const map={start_url:'auth-start-url',region:'auth-region',account_id:'auth-account-id',role_name:'auth-role-name'};for(const[k,id]of Object.entries(map)){const v=document.getElementById(id).value.trim();if(v)await fetch('api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'sso_'+k,value:v})})}toast('✓ Auth config saved');}
 
-// SSO
-function startSSO(){
-  const es=new EventSource('api/sso');
-  es.onmessage=e=>{
-    const s=JSON.parse(e.data),el=document.getElementById('sso');
-    if(s.pending)el.innerHTML=`<div class="sso"><p>🔐 Auth Required</p><a href="${s.verification_url}" target="_blank" style="font-size:13px;word-break:break-all">${s.verification_url}</a><div class="code">${s.user_code}</div><p class="dim mt8">Waiting for approval...</p></div>`;
-    else if(s.authenticated){el.innerHTML=`<div class="sso"><p>✅ Authenticated</p><p class="dim mt8"><span class="badge bg">${s.auth_type}</span> ${s.region}</p></div>`;loadModels()}
-    else el.innerHTML=`<div class="sso"><p>⚠️ Not Authenticated</p><p class="dim mt8">Type <b>login</b> in the terminal below</p></div>`
-  }
-}
+// Config
+let cfgData={};
+async function cfgLoad(){try{const r=await fetch('api/config');cfgData=await r.json();cfgRender()}catch(e){}}
+function cfgRender(){const el=document.getElementById('cfg-list'),keys=Object.keys(cfgData).sort();if(!keys.length){el.innerHTML='<p class="dim">No entries</p>';return}el.innerHTML=keys.map(k=>{const e=cfgData[k],v=typeof e.value==='string'?e.value:JSON.stringify(e.value);return`<div class="cfg-entry" id="cfg-row-${k}"><span class="ck">${esc(k)}</span><span class="cv" ondblclick="cfgEdit('${esc(k)}')">${esc(v)}</span><button class="btn-sm" style="background:var(--accent)" onclick="cfgEdit('${esc(k)}')">✎</button><button class="btn-del" onclick="cfgDel('${esc(k)}')">✕</button></div>`}).join('')}
+async function cfgAdd(){const k=document.getElementById('cfg-k').value.trim(),raw=document.getElementById('cfg-v').value.trim();if(!k){toast('Enter key');return}let v;try{v=JSON.parse(raw)}catch{v=raw}const r=await fetch('api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,value:v})});if(r.ok){document.getElementById('cfg-k').value='';document.getElementById('cfg-v').value='';toast('✓ Added');cfgLoad()}}
+function cfgEdit(k){const e=cfgData[k];if(!e)return;const row=document.getElementById('cfg-row-'+k);if(!row)return;const v=typeof e.value==='string'?e.value:JSON.stringify(e.value);row.innerHTML=`<span class="ck">${esc(k)}</span><input value="${v.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')cfgSave('${k}',this.value);if(event.key==='Escape')cfgLoad()"><button class="btn-sm" style="background:var(--green)" onclick="cfgSave('${k}',this.previousElementSibling.value)">✓</button><button class="btn-sm" style="background:var(--dim)" onclick="cfgLoad()">✕</button>`;row.querySelector('input').focus()}
+async function cfgSave(k,raw){let v;try{v=JSON.parse(raw)}catch{v=raw}await fetch('api/config/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:v})});toast('✓ Saved');cfgLoad()}
+async function cfgDel(k){if(!confirm('Delete "'+k+'"?'))return;await fetch('api/config/'+encodeURIComponent(k),{method:'DELETE'});toast('✓ Deleted');cfgLoad()}
+
+// Accounts
+async function accLoad(){try{const d=await(await fetch('api/accounts')).json();const el=document.getElementById('acc-list');if(!d||!d.length){el.innerHTML='';return}el.innerHTML=d.map(a=>{const exp=a.expires_at?new Date(a.expires_at).toLocaleString():'—';const st=a.active?'<span class="badge bg">active</span>':'<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">expired</span>';return`<div class="key-item"><div class="top"><span class="kname">${esc(a.name||a.id)} ${st}</span><span class="dim">${a.auth_type}</span></div><span class="meta">Expires: ${exp}</span></div>`}).join('')}catch(e){}}
+async function accScanCLI(){const r=await fetch('api/accounts/import/kiro-cli',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const d=await r.json();toast(d.imported?'Imported '+d.imported:'No tokens found');accLoad()}
+function accShowImport(){const f=document.getElementById('acc-import-form');f.style.display=f.style.display==='none'?'block':'none'}
+async function accImportToken(){const body={name:document.getElementById('acc-name').value,access_token:document.getElementById('acc-token').value,refresh_token:document.getElementById('acc-refresh').value,client_id:document.getElementById('acc-client-id').value,client_secret:document.getElementById('acc-client-secret').value};if(!body.access_token){toast('Token required');return}const r=await fetch('api/accounts/import/sso-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){toast('✓ Imported');document.getElementById('acc-import-form').style.display='none';accLoad()}else toast('Error')}
+function accExport(){window.open('api/accounts/export','_blank')}
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </body>
 </html>

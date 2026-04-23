@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -256,7 +257,7 @@ func NewAuthManager(cfg Config) (*AuthManager, error) {
 		// Initialize headless auth
 		ctx := context.Background()
 		if err := am.headlessAuth.InitializeNonBlocking(ctx); err != nil {
-			return nil, fmt.Errorf("failed to initialize headless authentication: %w", err)
+			log.Printf("[WARN] Headless auth init failed: %v (re-auth via dashboard)", err)
 		}
 		
 		// Start background refresh

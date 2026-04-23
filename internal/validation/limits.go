@@ -349,6 +349,74 @@ var ModelLimits = map[string]ModelLimit{
 		Intelligence:             "good",
 		CostTier:                 "low",
 	},
+
+	// Auto (routes to best available)
+	"auto": {
+		ContextWindow: 200_000, ExtendedContextWindow: 1_000_000,
+		MaxOutput: 32_000, MaxOutputExtended: 8_000,
+		SupportsMultimodal: true, SupportsExtendedThinking: true, SupportsExtendedContext: true,
+		Speed: "medium", Intelligence: "high", CostTier: "medium",
+	},
+	"claude-opus-4.6": {
+		ContextWindow: 200_000, ExtendedContextWindow: 1_000_000,
+		MaxOutput: 32_000, MaxOutputExtended: 8_000,
+		SupportsMultimodal: true, SupportsExtendedThinking: true, SupportsExtendedContext: true,
+		Speed: "slow", Intelligence: "highest", CostTier: "high",
+	},
+	"claude-sonnet-4.6": {
+		ContextWindow: 200_000, ExtendedContextWindow: 1_000_000,
+		MaxOutput: 32_000, MaxOutputExtended: 8_000,
+		SupportsMultimodal: true, SupportsExtendedThinking: true, SupportsExtendedContext: true,
+		Speed: "medium", Intelligence: "high", CostTier: "medium",
+	},
+	"claude-opus-4.5": {
+		ContextWindow: 200_000, ExtendedContextWindow: 1_000_000,
+		MaxOutput: 32_000, MaxOutputExtended: 8_000,
+		SupportsMultimodal: true, SupportsExtendedThinking: true, SupportsExtendedContext: true,
+		Speed: "slow", Intelligence: "highest", CostTier: "high",
+	},
+	"claude-sonnet-4.5": {
+		ContextWindow: 200_000, ExtendedContextWindow: 1_000_000,
+		MaxOutput: 32_000, MaxOutputExtended: 8_000,
+		SupportsMultimodal: true, SupportsExtendedThinking: true, SupportsExtendedContext: true,
+		Speed: "medium", Intelligence: "high", CostTier: "medium",
+	},
+	"claude-haiku-4.5": {
+		ContextWindow: 200_000, ExtendedContextWindow: 0,
+		MaxOutput: 8_192, MaxOutputExtended: 0,
+		SupportsMultimodal: true, SupportsExtendedThinking: false, SupportsExtendedContext: false,
+		Speed: "fast", Intelligence: "good", CostTier: "low",
+	},
+	"deepseek-3.2": {
+		ContextWindow: 128_000, ExtendedContextWindow: 0,
+		MaxOutput: 16_000, MaxOutputExtended: 0,
+		SupportsMultimodal: false, SupportsExtendedThinking: true, SupportsExtendedContext: false,
+		Speed: "medium", Intelligence: "high", CostTier: "low",
+	},
+	"minimax-m2.5": {
+		ContextWindow: 200_000, ExtendedContextWindow: 0,
+		MaxOutput: 16_000, MaxOutputExtended: 0,
+		SupportsMultimodal: true, SupportsExtendedThinking: false, SupportsExtendedContext: false,
+		Speed: "fast", Intelligence: "good", CostTier: "low",
+	},
+	"minimax-m2.1": {
+		ContextWindow: 200_000, ExtendedContextWindow: 0,
+		MaxOutput: 16_000, MaxOutputExtended: 0,
+		SupportsMultimodal: true, SupportsExtendedThinking: false, SupportsExtendedContext: false,
+		Speed: "fast", Intelligence: "good", CostTier: "low",
+	},
+	"glm-5": {
+		ContextWindow: 128_000, ExtendedContextWindow: 0,
+		MaxOutput: 16_000, MaxOutputExtended: 0,
+		SupportsMultimodal: true, SupportsExtendedThinking: false, SupportsExtendedContext: false,
+		Speed: "fast", Intelligence: "good", CostTier: "low",
+	},
+	"qwen3-coder-next": {
+		ContextWindow: 128_000, ExtendedContextWindow: 0,
+		MaxOutput: 16_000, MaxOutputExtended: 0,
+		SupportsMultimodal: false, SupportsExtendedThinking: true, SupportsExtendedContext: false,
+		Speed: "medium", Intelligence: "high", CostTier: "low",
+	},
 }
 
 // ModelLimit defines limits for a specific model

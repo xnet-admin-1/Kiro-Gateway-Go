@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/yourusername/kiro-gateway-go/internal/models"
+	"github.com/yourusername/kiro-gateway-go/internal/logging"
 )
 
 // AuthManager interface for testing
@@ -149,37 +150,61 @@ func (c *Client) PostStream(ctx context.Context, endpoint string, payload interf
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %w", err)
 	}
-	
-	// Use bearer token auth for SendMessage (AI_EDITOR origin requires it)
+
+	// Try bearer token path first
 	token, err := c.getBearerToken(ctx)
 	if err != nil {
-		log.Printf("[WARN] Bearer token unavailable: %v — falling back to SigV4", err)
-		url := c.buildURL("/generateAssistantResponse")
-		target := "AmazonQDeveloperStreamingService.GenerateAssistantResponse"
-		return c.doWithRetry(ctx, "POST", url, body, true, target)
+		log.Printf("[WARN] Bearer token unavailable: %v — using SigV4", err)
+		return c.postStreamSigV4(ctx, body)
 	}
 
-	// Bearer token path uses /generateAssistantResponse endpoint
-	sendURL := fmt.Sprintf("https://q.%s.amazonaws.com/generateAssistantResponse", c.authManager.GetRegion())
+	resp, err := c.postStreamBearer(ctx, body, token)
+	if err != nil || (resp != nil && resp.StatusCode >= 400) {
+		reason := ""
+		if err != nil {
+			reason = err.Error()
+		} else {
+			reason = fmt.Sprintf("status %d", resp.StatusCode)
+			if errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048)); len(errBody) > 0 {
+				log.Printf("[WARN] Bearer %d response: %s", resp.StatusCode, string(errBody))
+			}
+			resp.Body.Close()
+		}
+		log.Printf("[WARN] Bearer endpoint failed (%s) — falling back to SigV4", reason)
+		return c.postStreamSigV4(ctx, body)
+	}
+	return resp, nil
+}
 
+func (c *Client) postStreamBearer(ctx context.Context, body []byte, token string) (*http.Response, error) {
+	sendURL := fmt.Sprintf("https://q.%s.amazonaws.com/generateAssistantResponse", c.authManager.GetRegion())
+	if logging.IsDebugEnabled() {
+		logging.DebugLog("Bearer request: url=%s body_size=%d token_prefix=%s", sendURL, len(body), token[:min(20, len(token))])
+		if len(body) < 2000 {
+			logging.DebugLog("Bearer body: %s", string(body))
+		} else {
+			logging.DebugLog("Bearer body (first 1000): %s", string(body[:1000]))
+			logging.DebugLog("Bearer body (last 500): %s", string(body[len(body)-500:]))
+		}
+	}
 	req, err := http.NewRequestWithContext(ctx, "POST", sendURL, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Set("Accept", "text/event-stream")
-	req.Header.Set("User-Agent", "aws-sdk-js/1.0.27 ua/2.1 os/linux lang/js md/nodejs#22.21.1 api/codewhispererstreaming#1.0.27 m/E KiroIDE-0.7.45")
-	req.Header.Set("x-amz-user-agent", "aws-sdk-js/1.0.27 KiroIDE-0.7.45")
+	req.Header.Set("User-Agent", "aws-sdk-js/3.0.0 ua/2.1 os/linux lang/js api/qdeveloperstreaming#1.0.0")
+	req.Header.Set("x-amz-user-agent", "aws-sdk-js/3.0.0")
 	req.Header.Set("x-amzn-codewhisperer-optout", "true")
-	req.Header.Set("x-amzn-kiro-agent-mode", "vibe")
-
 	log.Printf("[HTTP] POST %s (Bearer)", sendURL)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	return resp, nil
+	return c.httpClient.Do(req)
+}
+
+func (c *Client) postStreamSigV4(ctx context.Context, body []byte) (*http.Response, error) {
+	url := c.buildURL("/")
+	log.Printf("[HTTP] POST %s (SigV4 fallback)", url)
+	return c.doWithRetry(ctx, "POST", url, body, true, "AmazonQDeveloperStreamingService.SendMessage")
 }
 
 // determineTarget determines the X-Amz-Target header value based on endpoint
@@ -237,7 +262,7 @@ func (c *Client) doWithRetry(ctx context.Context, method, url string, body []byt
 		fmt.Printf("[DEBUG] UseQDeveloper: %v\n", c.useQDeveloper)
 		
 		// Debug: Log request body (only in DEBUG mode)
-		if os.Getenv("DEBUG") == "true" || os.Getenv("DEBUG") == "1" {
+		if logging.IsDebugEnabled() {
 			if len(body) > 0 && len(body) < 10000 {
 				fmt.Printf("[DEBUG] Request body: %s\n", string(body))
 			} else if len(body) > 0 {

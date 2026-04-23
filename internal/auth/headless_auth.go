@@ -14,6 +14,7 @@ import (
 	"github.com/yourusername/kiro-gateway-go/internal/auth/credentials"
 	"github.com/yourusername/kiro-gateway-go/internal/auth/oidc"
 	"github.com/yourusername/kiro-gateway-go/internal/storage"
+	"github.com/yourusername/kiro-gateway-go/internal/logging"
 )
 
 // HeadlessAuthManager manages headless SSO OIDC authentication
@@ -327,7 +328,7 @@ func (m *HeadlessAuthManager) displayAuthInstructions(auth *oidc.DeviceAuthRespo
 			)
 			
 			// Log for debugging (redacted in production)
-			if os.Getenv("DEBUG") == "true" || os.Getenv("DEBUG") == "1" {
+			if logging.IsDebugEnabled() {
 				log.Printf("[TOTP] Current code: %s (expires in %ds)\n", currentCode, secondsRemaining)
 			} else {
 				log.Printf("[TOTP] MFA code generated (expires in %ds)\n", secondsRemaining)
@@ -818,4 +819,22 @@ func (m *HeadlessAuthManager) ClearCredentials() {
 	m.credExpiry = time.Time{}
 	m.mu.Unlock()
 	m.tokenStore.DeleteToken()
+}
+
+// UpdateConfig updates runtime-configurable fields without restart.
+func (m *HeadlessAuthManager) UpdateConfig(startURL, region, accountID, roleName string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if startURL != "" {
+		m.startURL = startURL
+	}
+	if region != "" {
+		m.region = region
+	}
+	if accountID != "" {
+		m.accountID = accountID
+	}
+	if roleName != "" {
+		m.roleName = roleName
+	}
 }

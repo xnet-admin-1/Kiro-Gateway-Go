@@ -400,20 +400,7 @@ func convertToolResultToQFormat(msg models.Message) *models.ToolResult {
 		content = "(empty result)"
 	}
 	
-	// FIX #3: Detect error status from content
 	status := "success"
-	contentLower := strings.ToLower(content)
-	
-	// Check for common error indicators
-	if strings.Contains(contentLower, "error:") ||
-	   strings.Contains(contentLower, "failed") ||
-	   strings.Contains(contentLower, "exception") ||
-	   strings.Contains(contentLower, "not found") ||
-	   strings.Contains(contentLower, "permission denied") ||
-	   strings.Contains(contentLower, "invalid") {
-		status = "error"
-		logging.DebugLog("Detected error in tool result: %s", content[:min(100, len(content))])
-	}
 	
 	// Create tool result content - always use text format
 	toolResultContent := models.ToolResultContent{
